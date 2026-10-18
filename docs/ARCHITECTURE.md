@@ -177,6 +177,8 @@ A module that needs something the generic card can't express (the `clock` module
 | `GET /api/modules/{id}/data` | session | Live data for one module (the frontend poll loop hits this) |
 | `GET /api/dashboard` | session | Saved layout |
 | `POST /api/dashboard` | session | Save a new layout |
+| `POST /api/nutrition/entries` | session | Log a meal (kcal/protein/carbs/fat) — the `nutrition` module's manual-entry half, no integration involved |
+| `GET /api/nutrition/entries` | session | Today's logged meals, newest first |
 | `GET /healthz` | none | Container healthcheck |
 
 ## Frontend widget contract

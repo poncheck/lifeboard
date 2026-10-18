@@ -49,6 +49,14 @@ class DashboardLayout(BaseModel):
     modules: list[dict]
 
 
+class NutritionEntry(BaseModel):
+    name: str
+    kcal: float
+    protein_g: float = 0
+    carbs_g: float = 0
+    fat_g: float = 0
+
+
 def create_app() -> FastAPI:
     secret_key = os.environ.get("LIFEBOARD_SECRET_KEY")
     if not secret_key:
@@ -310,6 +318,79 @@ def create_app() -> FastAPI:
     def save_dashboard(body: DashboardLayout):
         layout_store.save(body.modules)
         return {"status": "ok"}
+
+    @app.post("/api/nutrition/entries")
+    def log_nutrition_entry(body: NutritionEntry):
+        """Manual meal entry for the nutrition module — the one module
+        with no integration half (per docs/ARCHITECTURE.md's Phase 3
+        plan). Writes straight into LifeBoard's own database; nothing
+        to sync, nothing to schedule."""
+        from datetime import datetime, timezone
+
+        conn = _credentials_db_connection()
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS nutrition_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                day TEXT NOT NULL,
+                logged_at TEXT NOT NULL,
+                name TEXT NOT NULL,
+                kcal REAL NOT NULL,
+                protein_g REAL NOT NULL DEFAULT 0,
+                carbs_g REAL NOT NULL DEFAULT 0,
+                fat_g REAL NOT NULL DEFAULT 0
+            )
+            """
+        )
+        now = datetime.now(timezone.utc)
+        conn.execute(
+            "INSERT INTO nutrition_log (day, logged_at, name, kcal, protein_g, carbs_g, fat_g) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (now.date().isoformat(), now.isoformat(), body.name, body.kcal, body.protein_g, body.carbs_g, body.fat_g),
+        )
+        conn.commit()
+        conn.close()
+        return {"status": "ok"}
+
+    @app.get("/api/nutrition/entries")
+    def list_nutrition_entries():
+        """Today's logged meals, newest first — used by the nutrition
+        module's log-a-meal UI to show what's already been entered."""
+        conn = _credentials_db_connection()
+        conn.execute(
+            """
+            CREATE TABLE IF NOT EXISTS nutrition_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                day TEXT NOT NULL,
+                logged_at TEXT NOT NULL,
+                name TEXT NOT NULL,
+                kcal REAL NOT NULL,
+                protein_g REAL NOT NULL DEFAULT 0,
+                carbs_g REAL NOT NULL DEFAULT 0,
+                fat_g REAL NOT NULL DEFAULT 0
+            )
+            """
+        )
+        from datetime import date
+
+        rows = conn.execute(
+            "SELECT id, logged_at, name, kcal, protein_g, carbs_g, fat_g FROM nutrition_log "
+            "WHERE day = ? ORDER BY id DESC",
+            (date.today().isoformat(),),
+        ).fetchall()
+        conn.close()
+        return [
+            {
+                "id": r[0],
+                "logged_at": r[1],
+                "name": r[2],
+                "kcal": r[3],
+                "protein_g": r[4],
+                "carbs_g": r[5],
+                "fat_g": r[6],
+            }
+            for r in rows
+        ]
 
     # Auth gate: every /api/* route except setup/login/logout requires a
     # valid session. Applied via middleware so each route above stays free

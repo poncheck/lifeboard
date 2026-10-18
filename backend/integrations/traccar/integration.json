@@ -1,0 +1,11 @@
+{
+  "id": "traccar",
+  "name": "Traccar",
+  "description": "GPS location tracking. Syncs the latest known position into LifeBoard's own database for the location module.",
+  "credential_fields": [
+    {"key": "server_url", "label": "Server URL (e.g. https://traccar.example.com)", "secret": false},
+    {"key": "api_token", "label": "API Token", "secret": true},
+    {"key": "device_id", "label": "Device ID", "secret": false}
+  ],
+  "sync_interval_seconds": 300
+}

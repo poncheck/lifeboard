@@ -1,0 +1,10 @@
+{
+  "id": "weather",
+  "name": "Weather",
+  "description": "Current temperature and conditions for your city.",
+  "icon": "cloud",
+  "category": "life",
+  "default_refresh_seconds": 300,
+  "grid_size": "1x1",
+  "requires_integration": "weather"
+}

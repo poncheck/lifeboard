@@ -5,6 +5,7 @@
 const WidgetRegistry = {
   _custom: {
     clock: ClockWidget,
+    nutrition: NutritionWidget,
   },
 
   getRenderer(moduleId) {

@@ -101,7 +101,14 @@ def test_session_token_round_trips(auth_store):
 
 def test_tampered_session_token_is_rejected(auth_store):
     token = auth_store.create_session_token("marcin@example.com")
-    tampered = token[:-1] + ("a" if token[-1] != "a" else "b")
+    # Tamper with a character in the middle of the signature rather than
+    # the very last character: flipping the last base64 character can,
+    # due to padding bits, sometimes decode to identical bytes (a flaky
+    # false-pass). A middle-of-signature flip reliably changes the
+    # decoded bytes and therefore the HMAC check.
+    middle = len(token) // 2
+    flipped_char = "a" if token[middle] != "a" else "b"
+    tampered = token[:middle] + flipped_char + token[middle + 1 :]
 
     assert auth_store.verify_session_token(tampered) is None
 

@@ -1,0 +1,10 @@
+{
+  "id": "weather",
+  "name": "Weather",
+  "description": "Current conditions for a city, via the keyless wttr.in provider — no API key or registration needed.",
+  "credential_fields": [
+    {"key": "city", "label": "City (e.g. 'Jelenia Gora')", "secret": false},
+    {"key": "high_wind_kmh", "label": "High-wind warning threshold (km/h, optional, default 40)", "secret": false}
+  ],
+  "sync_interval_seconds": 1800
+}

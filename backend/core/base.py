@@ -32,7 +32,13 @@ class Integration(ABC):
     @abstractmethod
     def sync(self, credentials: dict, db: Any) -> None:
         """Called on the integration's sync_interval_seconds by the
-        scheduler, and on-demand via 'Sync now'. Must not raise — catch
-        your own errors, log them, and let the scheduler retry next
-        tick. Must be idempotent (upsert on a natural key)."""
+        scheduler, and on-demand via 'Sync now'. Must be idempotent
+        (upsert on a natural key). Raising is fine and expected for
+        real failures (network error, bad credentials, platform
+        outage): integration_registry.sync() catches it, logs it, and
+        reports (success=False, error_message) so the scheduler can
+        retry next tick and the admin panel's status line can show the
+        real error — don't swallow exceptions here just to satisfy an
+        old 'never raise' rule, that would hide failures instead of
+        surfacing them."""
         raise NotImplementedError

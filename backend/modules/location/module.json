@@ -1,0 +1,10 @@
+{
+  "id": "location",
+  "name": "Location",
+  "description": "Last known position from Traccar, reverse-geocoded to a city.",
+  "icon": "map-pin",
+  "category": "life",
+  "default_refresh_seconds": 60,
+  "grid_size": "1x1",
+  "requires_integration": "traccar"
+}

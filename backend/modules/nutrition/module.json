@@ -1,0 +1,10 @@
+{
+  "id": "nutrition",
+  "name": "Nutrition",
+  "description": "Today's logged meals — kcal, protein, carbs, fat. Manual entry, no integration.",
+  "icon": "utensils",
+  "category": "health",
+  "default_refresh_seconds": 60,
+  "grid_size": "2x1",
+  "requires_integration": null
+}

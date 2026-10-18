@@ -1,0 +1,10 @@
+{
+  "id": "training_readiness",
+  "name": "Training Readiness",
+  "description": "Daily readiness score from HRV, resting HR, sleep, and training load (TSB).",
+  "icon": "activity",
+  "category": "health",
+  "default_refresh_seconds": 300,
+  "grid_size": "2x1",
+  "requires_integration": "intervals_icu"
+}

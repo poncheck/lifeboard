@@ -1,0 +1,10 @@
+{
+  "id": "intervals_icu",
+  "name": "Intervals.icu",
+  "description": "Training load, HRV, and activity data. Syncs daily wellness rows (HRV, resting HR, sleep, CTL/ATL) into LifeBoard's own database for the training_readiness module.",
+  "credential_fields": [
+    {"key": "athlete_id", "label": "Athlete ID (0 for 'my athlete')", "secret": false},
+    {"key": "api_key", "label": "API Key", "secret": true}
+  ],
+  "sync_interval_seconds": 900
+}
