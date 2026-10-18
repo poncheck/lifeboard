@@ -57,6 +57,11 @@ class NutritionEntry(BaseModel):
     fat_g: float = 0
 
 
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+
 def create_app() -> FastAPI:
     secret_key = os.environ.get("LIFEBOARD_SECRET_KEY")
     if not secret_key:
@@ -228,6 +233,35 @@ def create_app() -> FastAPI:
 
     @app.post("/api/logout")
     def logout(response: Response):
+        response.delete_cookie(_SESSION_COOKIE_NAME)
+        return {"status": "ok"}
+
+    @app.post("/api/account/change-password")
+    def change_password(body: ChangePasswordRequest, response: Response):
+        """Per Phase 5 ('Change password' account settings view): requires
+        the current password, bumps session_epoch on success so every
+        existing session — including the one making this request —
+        is invalidated. Responds by clearing this request's own cookie
+        too, since its token is now worthless; the frontend redirects
+        to /login.html afterward."""
+        changed = auth_store.change_password(body.current_password, body.new_password)
+        if not changed:
+            # 400, not 401: this is a validation failure of the
+            # current_password field, not a session-auth failure — the
+            # session making this request is otherwise valid. Using 401
+            # here would make the generic frontend Api wrapper's
+            # "401 -> redirect to /login.html" rule kick in and bounce
+            # the user away instead of showing the error inline.
+            raise HTTPException(status_code=400, detail="Current password is incorrect.")
+        response.delete_cookie(_SESSION_COOKIE_NAME)
+        return {"status": "ok"}
+
+    @app.post("/api/account/logout-all-sessions")
+    def logout_all_sessions(response: Response):
+        """Per Phase 5: invalidates every session token (including this
+        request's) without touching the password — e.g. 'I think I'm
+        logged in somewhere I shouldn't be'."""
+        auth_store.logout_all_sessions()
         response.delete_cookie(_SESSION_COOKIE_NAME)
         return {"status": "ok"}
 
@@ -449,6 +483,10 @@ def create_app() -> FastAPI:
         @app.get("/admin/integrations.html")
         def admin_integrations_page():
             return FileResponse(frontend_dir / "admin" / "integrations.html")
+
+        @app.get("/account.html")
+        def account_settings_page():
+            return FileResponse(frontend_dir / "account.html")
 
         @app.get("/")
         def index_page():

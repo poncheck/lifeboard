@@ -1,0 +1,10 @@
+[tool.ruff]
+line-length = 110
+
+[tool.ruff.lint]
+# Scoped to catch real bugs (unused imports, undefined names, syntax
+# errors) without demanding a repo-wide style rewrite for things like
+# SIM117 (nested `with` blocks) or UP017 (datetime.UTC vs
+# datetime.timezone.utc) that this codebase uses consistently on
+# purpose. Widen this ruleset deliberately later, not by CI drive-by.
+select = ["F", "E9"]

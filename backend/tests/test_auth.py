@@ -122,3 +122,63 @@ def test_session_token_signed_with_different_key_is_rejected(tmp_path):
 
     store_b = AuthStore(db_path, secret_key="key-two-long-enough-for-signing")
     assert store_b.verify_session_token(token) is None
+
+
+def test_change_password_with_correct_current_password_succeeds(auth_store):
+    auth_store.create_account(
+        full_name="Marcin Petkowicz",
+        date_of_birth="1986-03-26",
+        email="marcin@example.com",
+        password="correct-horse-battery-staple",
+    )
+
+    changed = auth_store.change_password("correct-horse-battery-staple", "new-even-better-password")
+    assert changed is True
+    assert auth_store.verify_login("marcin@example.com", "new-even-better-password") is True
+    assert auth_store.verify_login("marcin@example.com", "correct-horse-battery-staple") is False
+
+
+def test_change_password_with_wrong_current_password_fails_and_does_not_change_it(auth_store):
+    auth_store.create_account(
+        full_name="Marcin Petkowicz",
+        date_of_birth="1986-03-26",
+        email="marcin@example.com",
+        password="correct-horse-battery-staple",
+    )
+
+    changed = auth_store.change_password("totally-wrong", "new-even-better-password")
+    assert changed is False
+    assert auth_store.verify_login("marcin@example.com", "correct-horse-battery-staple") is True
+
+
+def test_change_password_invalidates_existing_session_tokens(auth_store):
+    auth_store.create_account(
+        full_name="Marcin Petkowicz",
+        date_of_birth="1986-03-26",
+        email="marcin@example.com",
+        password="correct-horse-battery-staple",
+    )
+    old_token = auth_store.create_session_token("marcin@example.com")
+    assert auth_store.verify_session_token(old_token) == "marcin@example.com"
+
+    auth_store.change_password("correct-horse-battery-staple", "new-even-better-password")
+
+    assert auth_store.verify_session_token(old_token) is None
+
+
+def test_logout_all_sessions_invalidates_existing_tokens_without_changing_password(auth_store):
+    auth_store.create_account(
+        full_name="Marcin Petkowicz",
+        date_of_birth="1986-03-26",
+        email="marcin@example.com",
+        password="correct-horse-battery-staple",
+    )
+    old_token = auth_store.create_session_token("marcin@example.com")
+
+    auth_store.logout_all_sessions()
+
+    assert auth_store.verify_session_token(old_token) is None
+    assert auth_store.verify_login("marcin@example.com", "correct-horse-battery-staple") is True
+
+    new_token = auth_store.create_session_token("marcin@example.com")
+    assert auth_store.verify_session_token(new_token) == "marcin@example.com"

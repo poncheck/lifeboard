@@ -169,6 +169,8 @@ A module that needs something the generic card can't express (the `clock` module
 | `POST /api/setup` | none (locks after first success) | One-time onboarding: name, DOB, email, admin password |
 | `POST /api/login` | none | `{email, password, remember_me}` → session cookie |
 | `POST /api/logout` | session | Clears session cookie |
+| `POST /api/account/change-password` | session | `{current_password, new_password}` — verifies current, then invalidates every session (including this one) via `session_epoch` |
+| `POST /api/account/logout-all-sessions` | session | Invalidates every session token without touching the password |
 | `GET /api/integrations` | session | List discovered integrations, manifests, `configured`/`last_synced_at`/`last_error` |
 | `POST /api/integrations/{id}/credentials` | session | Save credentials (runs `test_connection()` first), (re)schedules sync |
 | `DELETE /api/integrations/{id}/credentials` | session | Remove credentials, stop scheduled sync |

@@ -13,7 +13,11 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+          cache: "pip"
+          cache-dependency-path: backend/requirements-dev.txt
       - name: Install dependencies
-        run: |
-          # Phase 1 adds backend/requirements.txt install + pytest here.
-          echo "Phase 0 scaffolding — no backend to test yet."
+        run: pip install -r backend/requirements-dev.txt
+      - name: Lint (ruff)
+        run: ruff check backend/
+      - name: Test (pytest)
+        run: PYTHONPATH=. pytest backend/tests -v
