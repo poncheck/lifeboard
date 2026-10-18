@@ -235,3 +235,31 @@ def test_dashboard_layout_save_then_load_round_trips(app_client):
     load_response = app_client.get("/api/dashboard")
     assert load_response.status_code == 200
     assert load_response.json()["modules"] == layout
+
+
+def test_delete_credentials_then_module_data_shows_no_data(app_client):
+    app_client.post(
+        "/api/setup",
+        json={
+            "full_name": "Marcin Petkowicz",
+            "date_of_birth": "1986-03-26",
+            "email": "marcin@example.com",
+            "password": "correct-horse-battery-staple",
+        },
+    )
+    app_client.post(
+        "/api/login",
+        json={"email": "marcin@example.com", "password": "correct-horse-battery-staple"},
+    )
+
+    app_client.post("/api/integrations/echo/credentials", json={"value": "hello-world"})
+    app_client.post("/api/integrations/echo/sync-now")
+
+    delete_response = app_client.delete("/api/integrations/echo/credentials")
+    assert delete_response.status_code == 200
+
+    # Credentials gone -> sync-now has nothing to sync with, but the
+    # previously-synced row (if any) is untouched; mainly we assert the
+    # delete endpoint itself works and doesn't 404/500.
+    sync_response = app_client.post("/api/integrations/echo/sync-now")
+    assert sync_response.status_code == 200

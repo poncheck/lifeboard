@@ -13,6 +13,7 @@ one of them to point at temp dirs):
 """
 import os
 import sqlite3
+from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Response
@@ -23,6 +24,7 @@ from backend.core.crypto import CredentialCipher, DecryptionError
 from backend.core.integration_registry import IntegrationRegistry
 from backend.core.layout_store import LayoutStore
 from backend.core.module_registry import ModuleRegistry
+from backend.core.scheduler import IntegrationScheduler
 
 _REPO_ROOT = Path(__file__).resolve().parent.parent
 _SESSION_COOKIE_NAME = "lifeboard_session"
@@ -108,7 +110,25 @@ def create_app() -> FastAPI:
         except DecryptionError:
             return {}
 
-    app = FastAPI(title="LifeBoard")
+    scheduler = IntegrationScheduler(
+        integration_registry=integration_registry,
+        load_credentials=_load_credentials,
+        open_db=_credentials_db_connection,
+    )
+
+    @asynccontextmanager
+    async def _lifespan(_app: FastAPI):
+        scheduler.start()
+        # Schedule every integration that already has saved credentials
+        # (e.g. restarting the container shouldn't require re-saving
+        # credentials to resume scheduled sync).
+        for integration_id, manifest in integration_registry.list_integrations().items():
+            if _load_credentials(integration_id):
+                scheduler.schedule(integration_id, manifest["sync_interval_seconds"])
+        yield
+        scheduler.shutdown()
+
+    app = FastAPI(title="LifeBoard", lifespan=_lifespan)
 
     @app.get("/healthz")
     def healthz():
@@ -174,6 +194,22 @@ def create_app() -> FastAPI:
         )
         conn.commit()
         conn.close()
+
+        manifest = integration_registry.list_integrations().get(integration_id)
+        if manifest is not None:
+            scheduler.schedule(integration_id, manifest["sync_interval_seconds"])
+        return {"status": "ok"}
+
+    @app.delete("/api/integrations/{integration_id}/credentials")
+    def delete_credentials(integration_id: str):
+        conn = _credentials_db_connection()
+        conn.execute(
+            "DELETE FROM integration_credentials WHERE integration_id = ?",
+            (integration_id,),
+        )
+        conn.commit()
+        conn.close()
+        scheduler.unschedule(integration_id)
         return {"status": "ok"}
 
     @app.post("/api/integrations/{integration_id}/sync-now")
