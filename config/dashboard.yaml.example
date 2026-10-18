@@ -1,0 +1,13 @@
+# Default dashboard layout — copy this to dashboard.yaml and customize.
+# dashboard.yaml is gitignored (it's your personal layout); this .example
+# file is the only one tracked in the repo.
+
+modules:
+  - id: clock
+    enabled: true
+    position: 0
+    refresh_seconds: 1
+  - id: echo
+    enabled: false
+    position: 1
+    refresh_seconds: 30

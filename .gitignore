@@ -1,0 +1,27 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.venv/
+venv/
+
+# LifeBoard runtime data — never committed
+backend/data/*.db
+backend/data/*.db-shm
+backend/data/*.db-wal
+
+# Real dashboard layout (user-specific) — ship dashboard.yaml.example instead
+config/dashboard.yaml
+
+# Secrets
+.env
+
+# Editor/OS
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# Node (if frontend tooling is ever added)
+node_modules/

@@ -1,0 +1,8 @@
+fastapi>=0.115,<1
+uvicorn[standard]>=0.32,<1
+pydantic>=2.9,<3
+bcrypt>=4.2,<5
+itsdangerous>=2.2,<3
+cryptography>=43.0,<44
+APScheduler>=3.10,<4
+PyYAML>=6.0,<7
