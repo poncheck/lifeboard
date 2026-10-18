@@ -23,7 +23,11 @@ modules:
     enabled: false
     position: 4
     refresh_seconds: 60
-  - module_id: echo
+  - module_id: portfolio
     enabled: false
     position: 5
+    refresh_seconds: 1800
+  - module_id: echo
+    enabled: false
+    position: 6
     refresh_seconds: 30

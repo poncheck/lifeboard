@@ -472,6 +472,13 @@ def create_app() -> FastAPI:
         def manifest_json():
             return FileResponse(frontend_dir / "manifest.json")
 
+        @app.get("/sw.js")
+        def service_worker():
+            # Served from site root (not /src/sw.js) so its default
+            # scope covers the whole site — service workers can only
+            # control paths at or below the URL they're served from.
+            return FileResponse(frontend_dir / "sw.js", media_type="application/javascript")
+
         @app.get("/login.html")
         def login_page():
             return FileResponse(frontend_dir / "login.html")

@@ -1,6 +1,6 @@
 """Discovery smoke test for all the real built-in integrations and
 modules shipped in backend/integrations and backend/modules — proves
-the registries load every Phase 1-3 built-in without error, through
+the registries load every Phase 1-6 built-in without error, through
 the actual API a deployment would hit.
 """
 
@@ -22,7 +22,7 @@ def test_all_real_integrations_and_modules_are_discovered(real_app_client):
     )
 
     integrations = app_client.get("/api/integrations").json()
-    assert set(integrations.keys()) >= {"echo", "intervals_icu", "traccar", "weather"}
+    assert set(integrations.keys()) >= {"echo", "intervals_icu", "traccar", "weather", "portfolio"}
 
     modules = app_client.get("/api/modules").json()
     assert set(modules.keys()) >= {
@@ -32,6 +32,7 @@ def test_all_real_integrations_and_modules_are_discovered(real_app_client):
         "location",
         "weather",
         "nutrition",
+        "portfolio",
     }
 
     # Every module not requiring an integration (or whose integration

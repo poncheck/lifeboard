@@ -69,9 +69,12 @@ class Sync(Integration):
         integration's own tables in LifeBoard's database (via `db`).
 
         Rules:
-        - Must not raise. Catch your own errors, log them, return. The
-          scheduler will retry on the next tick; one broken integration
-          must never crash the app or block other integrations.
+        - Raising is fine and expected for real failures (bad
+          credentials, network error, platform outage) — the registry
+          catches it, logs it, and reports (success=False, error) for
+          the scheduler's retry-next-tick logic and the admin panel's
+          status line. Don't swallow your own exceptions just to be
+          "safe"; that hides real failures instead of surfacing them.
         - Must be idempotent — syncing the same data twice should not
           create duplicate rows (upsert on a natural key, not insert).
         - Own your own tables. Don't write into another integration's
@@ -160,6 +163,7 @@ A module that needs something the generic card can't express (the `clock` module
 - `backend/core/integration_registry.py` does the same for `backend/integrations/*/integration.json`.
 - Each imports its sibling Python file (`provider.py` or `sync.py`) and registers the class found there.
 - **A broken manifest or an import error is logged and that one module/integration is skipped — the registry never lets one bad folder take down the whole app.** This is the load-bearing rule of an "anyone can drop a module in" system; don't weaken it.
+- `scripts/new_module.sh <module_id> [--with-integration]` generates the stub files for a new module (and optionally its integration half) with TODOs in place — see [`MODULE_AUTHORING.md`](MODULE_AUTHORING.md). [`MODULE_INDEX.md`](MODULE_INDEX.md) lists both the built-in modules and any third-party ones people want discoverable without merging into this repo.
 
 ## API surface
 
@@ -190,11 +194,12 @@ A module that needs something the generic card can't express (the `clock` module
 - The dashboard polls `GET /api/modules/{id}/data` on an independent `setInterval` per widget (using `refresh_seconds` from the saved layout, falling back to the manifest default) — one slow module's poll never blocks another's. The config panel (`frontend/src/config_panel.js`) exposes a per-module refresh override input alongside the enable/disable checkbox.
 - Dashboard cards are drag-to-reposition (`frontend/src/dashboard.js`'s `_wireDragReorder`); dropping a card persists the new `position` order to `/api/dashboard` immediately.
 - `frontend/src/theme.js` applies a `data-theme="light"` attribute on `<html>` (default is dark) and persists the choice in `localStorage`, independent of the OS's `prefers-color-scheme` — loaded in every page's `<head>` before the stylesheet to avoid a flash of the wrong theme.
+- `frontend/sw.js` (registered by `frontend/src/register_sw.js`) caches the app shell (HTML/CSS/JS/icons) cache-first and `/api/*` GET responses network-first-with-cache-fallback, so "Add to Home Screen" keeps working offline with real (if stale) data, not just a blank shell. Auth endpoints (`/api/setup`, `/api/login`, `/api/logout`, `/api/account/*`) are never intercepted — serving a stale 200 for a login POST would be actively wrong.
 - The admin panel (`frontend/src/admin/integrations.js`) renders one card per discovered integration: a form built from `credential_fields`, "Test & Save", a sync status line, and "Sync now".
 
 ## Security model (v1)
 
-- Single operator account, set up once on first boot. No multi-user, no OAuth.
+- Single operator account, set up once on first boot. No multi-user, no OAuth. (Deliberately skipped as a Phase 6 stretch goal — this is a one-household dashboard; `change-password`/`logout-all-sessions` cover the realistic "I think someone else has my session" need without the complexity of real multi-tenancy.)
 - Session via a signed, HTTP-only cookie. No auth on `/healthz` (container healthcheck needs to work before login exists).
 - Integration credentials are encrypted at rest (Fernet) using a key derived from `SECRET_KEY` (the one secret that lives in `.env`, never in the database). A missing or invalid `SECRET_KEY` fails loudly at boot — there is no silent fallback to storing credentials in plaintext.
 - Assumed deployment: trusted LAN. Nothing here is designed to be safely exposed to the public internet without additional hardening (reverse proxy + TLS, rate limiting, etc.) — that's explicitly out of scope for v1.

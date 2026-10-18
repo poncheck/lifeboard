@@ -1,0 +1,10 @@
+{
+  "id": "portfolio",
+  "name": "Portfolio",
+  "description": "Total value of your crypto + cash holdings, priced live.",
+  "icon": "trending-up",
+  "category": "finance",
+  "default_refresh_seconds": 1800,
+  "grid_size": "1x1",
+  "requires_integration": "portfolio"
+}

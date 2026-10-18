@@ -1,0 +1,13 @@
+{
+  "id": "portfolio",
+  "name": "Portfolio",
+  "description": "Crypto + cash portfolio value, priced live via NBP (PLN FX rates) and CoinGecko (crypto, keyless). Per docs/ARCHITECTURE.md's Phase 6 note: this is the one module that's inherently personal rather than a generic 'anyone can plug in their own account' integration — stock positions (Tradegate/bankier-style sources) aren't included because those require fragile scraping or a headless browser; this integration deliberately sticks to reliable, keyless, documented APIs.",
+  "credential_fields": [
+    {
+      "key": "holdings_json",
+      "label": "Holdings (JSON array, see docs/MODULE_AUTHORING.md's portfolio example)",
+      "secret": true
+    }
+  ],
+  "sync_interval_seconds": 1800
+}

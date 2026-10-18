@@ -2,6 +2,8 @@
 
 This is the hands-on walkthrough. For the full design rationale (why the integration/display-provider split exists, the generic card schema, discovery rules) read [`ARCHITECTURE.md`](ARCHITECTURE.md) first — this doc assumes you've skimmed it.
 
+**Fastest start:** `scripts/new_module.sh my_module --with-integration` (or omit the flag for a display-only module) generates the stub files below with TODOs already in place. The rest of this doc explains what to fill in and why.
+
 ## The four files
 
 A module backed by a third-party platform has **two halves**, each its own folder:
@@ -198,3 +200,7 @@ If you want your module merged into the main LifeBoard repo (rather than just ke
 - [ ] Tests cover: discovery (the manifest is valid JSON, the class is found), the happy path, and at least one degraded path (no sync yet / sync failure).
 - [ ] If your integration depends on a third-party account most users won't have (like `training_readiness`'s `intervals_icu` dependency), that's fine — it just means your module's "happy path" test should still pass in CI without real credentials (mock the network call).
 - [ ] Open a PR. CI (`.github/workflows/ci.yml`) runs the full backend test suite automatically.
+
+## Not contributing it back? List it anyway
+
+If your module is staying in your own fork (e.g. it's specific to one platform most people don't have), add it to [`MODULE_INDEX.md`](MODULE_INDEX.md) so others building against the same contract can find it.

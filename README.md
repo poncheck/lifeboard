@@ -12,9 +12,9 @@ Most personal dashboards either lock you into someone else's cloud service, or r
 
 ## Status
 
-✅ Phases 0–5 complete: auth, the full integration/module registry + scheduler, a responsive no-build-step frontend, four real integrations (Intervals.icu, Traccar, wttr.in weather, manual nutrition logging) with their matching dashboard modules, drag-to-reposition + per-module refresh + dark/light theme, and account settings (change password, log out all sessions). 86+ backend tests, all passing; the full stack has been exercised against real third-party accounts, not just mocks. See [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design and [`MODULE_AUTHORING.md`](docs/MODULE_AUTHORING.md) to write your own module.
+✅ Phases 0–6 complete: auth, the full integration/module registry + scheduler, a responsive no-build-step frontend, five real integrations (Intervals.icu, Traccar, wttr.in weather, manual nutrition logging, crypto+cash portfolio via NBP+CoinGecko) with their matching dashboard modules, drag-to-reposition + per-module refresh + dark/light theme, account settings (change password, log out all sessions), real offline/installable PWA behavior, a module scaffolding generator, and a finished module-authoring guide. 100+ backend tests, all passing; the full stack has been exercised against real third-party accounts, not just mocks. See [`ARCHITECTURE.md`](docs/ARCHITECTURE.md) for the full design and [`MODULE_AUTHORING.md`](docs/MODULE_AUTHORING.md) to write your own module.
 
-Phase 6 (stretch goals — a Marcin-specific `portfolio` module, multi-user accounts, a module scaffolding generator) is optional future work, not required for daily use.
+Multi-user accounts were deliberately skipped (see `ARCHITECTURE.md`'s security model) — this is a one-household dashboard, not a multi-tenant SaaS.
 
 ## Quick start
 
@@ -39,6 +39,7 @@ Works on a laptop browser as the primary surface; "Add to Home Screen" on a phon
 | Traccar | Server URL + API token | Location — last known position, reverse-geocoded to a city |
 | Weather (wttr.in) | Just a city name — no API key | Weather — current temp/conditions, warns above a configurable wind threshold |
 | *(none)* | — | Nutrition — manual meal logging (kcal/protein/carbs/fat), no third-party account needed |
+| Portfolio (NBP + CoinGecko) | Holdings JSON (crypto + cash, quantities/cost basis) — no API key | Portfolio — total crypto+cash value priced live vs cost basis |
 | *(none)* | — | Clock — built-in, always available |
 
 ## Writing your own module
