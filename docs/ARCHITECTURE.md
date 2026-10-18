@@ -165,14 +165,15 @@ A module that needs something the generic card can't express (the `clock` module
 
 | Route | Auth | Purpose |
 |---|---|---|
+| `GET /api/account/status` | none | `{has_account}` — frontend uses this to route between setup/login/dashboard |
 | `POST /api/setup` | none (locks after first success) | One-time onboarding: name, DOB, email, admin password |
-| `POST /api/login` | none | `{username, password, remember_me}` → session cookie |
+| `POST /api/login` | none | `{email, password, remember_me}` → session cookie |
 | `POST /api/logout` | session | Clears session cookie |
-| `GET /api/integrations` | session | List discovered integrations, manifests, configured/healthy status |
-| `POST /api/integrations/{id}/credentials` | session | Save credentials (runs `test_connection()` first) |
+| `GET /api/integrations` | session | List discovered integrations, manifests, `configured`/`last_synced_at`/`last_error` |
+| `POST /api/integrations/{id}/credentials` | session | Save credentials (runs `test_connection()` first), (re)schedules sync |
 | `DELETE /api/integrations/{id}/credentials` | session | Remove credentials, stop scheduled sync |
-| `POST /api/integrations/{id}/sync-now` | session | Trigger an immediate sync |
-| `GET /api/modules` | session | List discovered modules, each flagged if `requires_integration` is unmet |
+| `POST /api/integrations/{id}/sync-now` | session | Trigger an immediate sync outside the schedule |
+| `GET /api/modules` | session | List discovered modules, each flagged with `requirement_satisfied` |
 | `GET /api/modules/{id}/data` | session | Live data for one module (the frontend poll loop hits this) |
 | `GET /api/dashboard` | session | Saved layout |
 | `POST /api/dashboard` | session | Save a new layout |

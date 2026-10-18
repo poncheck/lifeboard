@@ -17,6 +17,8 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Response
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from backend.core.auth import AuthStore
@@ -40,6 +42,7 @@ class SetupRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: str
     password: str
+    remember_me: bool = True
 
 
 class DashboardLayout(BaseModel):
@@ -83,8 +86,48 @@ def create_app() -> FastAPI:
             "CREATE TABLE IF NOT EXISTS integration_credentials "
             "(integration_id TEXT PRIMARY KEY, encrypted_payload TEXT NOT NULL)"
         )
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS integration_sync_status "
+            "(integration_id TEXT PRIMARY KEY, last_synced_at TEXT, last_error TEXT)"
+        )
         conn.commit()
         return conn
+
+    def _record_sync_result(integration_id: str, success: bool, error_message: str | None) -> None:
+        from datetime import datetime, timezone
+
+        conn = _credentials_db_connection()
+        if success:
+            now = datetime.now(timezone.utc).isoformat()
+            conn.execute(
+                "INSERT INTO integration_sync_status (integration_id, last_synced_at, last_error) "
+                "VALUES (?, ?, NULL) "
+                "ON CONFLICT(integration_id) DO UPDATE SET last_synced_at = ?, last_error = NULL",
+                (integration_id, now, now),
+            )
+        else:
+            # A failed sync doesn't erase the last successful sync time —
+            # only the error message is updated, so the admin panel can
+            # show both "last synced 2h ago" and "last error: ...".
+            conn.execute(
+                "INSERT INTO integration_sync_status (integration_id, last_synced_at, last_error) "
+                "VALUES (?, NULL, ?) "
+                "ON CONFLICT(integration_id) DO UPDATE SET last_error = ?",
+                (integration_id, error_message, error_message),
+            )
+        conn.commit()
+        conn.close()
+
+    def _load_sync_status(integration_id: str) -> dict:
+        conn = _credentials_db_connection()
+        row = conn.execute(
+            "SELECT last_synced_at, last_error FROM integration_sync_status WHERE integration_id = ?",
+            (integration_id,),
+        ).fetchone()
+        conn.close()
+        if row is None:
+            return {"last_synced_at": None, "last_error": None}
+        return {"last_synced_at": row[0], "last_error": row[1]}
 
     def _require_session(session_token: str | None) -> str:
         if session_token is None:
@@ -114,6 +157,7 @@ def create_app() -> FastAPI:
         integration_registry=integration_registry,
         load_credentials=_load_credentials,
         open_db=_credentials_db_connection,
+        on_sync_result=_record_sync_result,
     )
 
     @asynccontextmanager
@@ -134,6 +178,17 @@ def create_app() -> FastAPI:
     def healthz():
         return {"status": "ok"}
 
+    @app.get("/api/account/status")
+    def account_status():
+        """Public (no-auth) status check the frontend uses to decide
+        whether to show the setup wizard, the login form, or (combined
+        with a protected-route 401) redirect an expired session back to
+        login. Not part of the documented API surface in
+        docs/ARCHITECTURE.md's original table, but required by Phase 2's
+        setup -> login -> dashboard flow and the frontend widget
+        contract's "a 401 mid-session redirects to /login.html" rule."""
+        return {"has_account": auth_store.has_account()}
+
     @app.post("/api/setup")
     def setup(body: SetupRequest):
         try:
@@ -152,9 +207,15 @@ def create_app() -> FastAPI:
         if not auth_store.verify_login(body.email, body.password):
             raise HTTPException(status_code=401, detail="Invalid email or password.")
         token = auth_store.create_session_token(body.email)
-        response.set_cookie(
-            _SESSION_COOKIE_NAME, token, httponly=True, samesite="lax", max_age=60 * 60 * 24 * 30
-        )
+        # remember_me=False sets a session cookie (no max_age — cleared
+        # when the browser closes); remember_me=True (default, matches
+        # decision 4's "phone home-screen shortcut doesn't re-prompt
+        # every time") persists for 30 days, matching the token's own
+        # max_age in auth.py.
+        cookie_kwargs = {"httponly": True, "samesite": "lax"}
+        if body.remember_me:
+            cookie_kwargs["max_age"] = 60 * 60 * 24 * 30
+        response.set_cookie(_SESSION_COOKIE_NAME, token, **cookie_kwargs)
         return {"status": "ok"}
 
     @app.post("/api/logout")
@@ -164,7 +225,12 @@ def create_app() -> FastAPI:
 
     @app.get("/api/modules")
     def list_modules():
-        return module_registry.list_modules()
+        result = {}
+        for module_id, manifest in module_registry.list_modules().items():
+            requires = manifest.get("requires_integration")
+            satisfied = requires is None or bool(_load_credentials(requires))
+            result[module_id] = {**manifest, "requirement_satisfied": satisfied}
+        return result
 
     @app.get("/api/modules/{module_id}/data")
     def get_module_data(module_id: str):
@@ -176,7 +242,16 @@ def create_app() -> FastAPI:
 
     @app.get("/api/integrations")
     def list_integrations():
-        return integration_registry.list_integrations()
+        result = {}
+        for integration_id, manifest in integration_registry.list_integrations().items():
+            status = _load_sync_status(integration_id)
+            result[integration_id] = {
+                **manifest,
+                "configured": bool(_load_credentials(integration_id)),
+                "last_synced_at": status["last_synced_at"],
+                "last_error": status["last_error"],
+            }
+        return result
 
     @app.post("/api/integrations/{integration_id}/credentials")
     def save_credentials(integration_id: str, credentials: dict):
@@ -217,9 +292,14 @@ def create_app() -> FastAPI:
         credentials = _load_credentials(integration_id)
         db = _credentials_db_connection()
         try:
-            integration_registry.sync(integration_id, credentials=credentials, db=db)
+            success, error_message = integration_registry.sync(
+                integration_id, credentials=credentials, db=db
+            )
         finally:
             db.close()
+        _record_sync_result(integration_id, success, error_message)
+        if not success:
+            raise HTTPException(status_code=502, detail=error_message or "Sync failed.")
         return {"status": "ok"}
 
     @app.get("/api/dashboard")
@@ -236,7 +316,13 @@ def create_app() -> FastAPI:
     # of repeated auth boilerplate.
     @app.middleware("http")
     async def require_auth_for_protected_routes(request, call_next):
-        public_paths = {"/healthz", "/api/setup", "/api/login", "/api/logout"}
+        public_paths = {
+            "/healthz",
+            "/api/setup",
+            "/api/login",
+            "/api/logout",
+            "/api/account/status",
+        }
         if request.url.path in public_paths or not request.url.path.startswith("/api"):
             return await call_next(request)
 
@@ -248,5 +334,34 @@ def create_app() -> FastAPI:
 
             return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
         return await call_next(request)
+
+    # Static frontend. No build step (see docs/ARCHITECTURE.md): vanilla
+    # JS/CSS served directly. HTML pages are not auth-gated themselves —
+    # each page's own JS calls the (auth-gated) API and redirects to
+    # /login.html on a 401, per the frontend widget contract.
+    frontend_dir = _REPO_ROOT / "frontend"
+    if frontend_dir.is_dir():
+        app.mount("/src", StaticFiles(directory=frontend_dir / "src"), name="frontend-src")
+        app.mount("/icons", StaticFiles(directory=frontend_dir / "icons"), name="frontend-icons")
+
+        @app.get("/manifest.json")
+        def manifest_json():
+            return FileResponse(frontend_dir / "manifest.json")
+
+        @app.get("/login.html")
+        def login_page():
+            return FileResponse(frontend_dir / "login.html")
+
+        @app.get("/setup.html")
+        def setup_page():
+            return FileResponse(frontend_dir / "setup.html")
+
+        @app.get("/admin/integrations.html")
+        def admin_integrations_page():
+            return FileResponse(frontend_dir / "admin" / "integrations.html")
+
+        @app.get("/")
+        def index_page():
+            return FileResponse(frontend_dir / "index.html")
 
     return app

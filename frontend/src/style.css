@@ -1,0 +1,396 @@
+/* LifeBoard — shared styles. No build step, no framework (see
+   docs/ARCHITECTURE.md): plain CSS, custom properties for the teal/slate
+   "control room" theme (decision 7 in the implementation plan). */
+
+:root {
+  --bg: #0f172a;
+  --bg-elevated: #16213e;
+  --bg-card: #1b2a4a;
+  --border: #2a3b5e;
+  --text: #e2e8f0;
+  --text-dim: #94a3b8;
+  --accent: #2dd4bf;
+  --accent-dim: #0d9488;
+  --ok: #2dd4bf;
+  --warn: #facc15;
+  --alert: #f87171;
+  --neutral: #94a3b8;
+  --radius: 10px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+a {
+  color: var(--accent);
+}
+
+/* Centered form shell — used by login/setup */
+.auth-shell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.auth-card {
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 2rem;
+  width: 100%;
+  max-width: 380px;
+}
+
+.auth-card h1 {
+  margin: 0 0 0.25rem;
+  font-size: 1.4rem;
+}
+
+.auth-card .tagline {
+  color: var(--text-dim);
+  margin: 0 0 1.5rem;
+  font-size: 0.9rem;
+}
+
+label {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin: 0.9rem 0 0.3rem;
+}
+
+input {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  border-radius: 6px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.95rem;
+}
+
+input:focus {
+  outline: 2px solid var(--accent-dim);
+  outline-offset: 1px;
+}
+
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  padding: 0.55rem 1rem;
+  font-weight: 600;
+}
+
+button.primary {
+  background: var(--accent);
+  color: #06201c;
+  width: 100%;
+  margin-top: 1.3rem;
+}
+
+button.primary:hover {
+  background: #5eead4;
+}
+
+button.secondary {
+  background: transparent;
+  color: var(--text-dim);
+  border: 1px solid var(--border);
+}
+
+button.secondary:hover {
+  color: var(--text);
+  border-color: var(--accent-dim);
+}
+
+button.danger {
+  background: transparent;
+  color: var(--alert);
+  border: 1px solid var(--alert);
+}
+
+.error-message {
+  color: var(--alert);
+  font-size: 0.85rem;
+  margin-top: 0.8rem;
+  min-height: 1em;
+}
+
+.remember-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.remember-row input {
+  width: auto;
+}
+
+.remember-row label {
+  margin: 0;
+}
+
+/* Top bar — dashboard + admin pages */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.2rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-elevated);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.topbar .brand {
+  font-weight: 700;
+  font-size: 1.1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.topbar .brand .dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--accent);
+  display: inline-block;
+}
+
+.topbar nav {
+  display: flex;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.topbar nav a,
+.topbar nav button {
+  color: var(--text-dim);
+  text-decoration: none;
+  background: transparent;
+  border: 1px solid transparent;
+  font-size: 0.85rem;
+  font-weight: 500;
+  padding: 0.4rem 0.7rem;
+  border-radius: 6px;
+}
+
+.topbar nav a:hover,
+.topbar nav button:hover {
+  background: var(--bg-card);
+  color: var(--text);
+}
+
+main {
+  padding: 1.2rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Dashboard grid */
+#dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-height: 110px;
+}
+
+.card.grid-2x1 {
+  grid-column: span 2;
+}
+
+.card.grid-2x2 {
+  grid-column: span 2;
+  grid-row: span 2;
+}
+
+@media (max-width: 480px) {
+  .card.grid-2x1,
+  .card.grid-2x2 {
+    grid-column: span 1;
+  }
+}
+
+.card .card-title {
+  font-size: 0.8rem;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.card .card-primary {
+  font-size: 2rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.card .card-primary .unit {
+  font-size: 1rem;
+  color: var(--text-dim);
+  font-weight: 500;
+  margin-left: 0.2rem;
+}
+
+.card .card-lines {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+  margin-top: 0.2rem;
+}
+
+.card .card-lines .line {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.card .card-updated {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  margin-top: auto;
+  opacity: 0.7;
+}
+
+.card[data-status="ok"] {
+  border-left: 3px solid var(--ok);
+}
+
+.card[data-status="warn"] {
+  border-left: 3px solid var(--warn);
+}
+
+.card[data-status="alert"] {
+  border-left: 3px solid var(--alert);
+}
+
+.card[data-status="neutral"] {
+  border-left: 3px solid var(--neutral);
+}
+
+.card.card-error {
+  border-left: 3px solid var(--alert);
+  color: var(--text-dim);
+}
+
+.card.card-disabled {
+  opacity: 0.55;
+}
+
+.empty-state {
+  color: var(--text-dim);
+  text-align: center;
+  padding: 3rem 1rem;
+}
+
+/* Config panel + admin integrations */
+.panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+
+.panel-item {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.9rem 1rem;
+}
+
+.panel-item.disabled {
+  opacity: 0.6;
+}
+
+.panel-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+}
+
+.panel-item-header .name {
+  font-weight: 600;
+}
+
+.panel-item-header .toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.panel-item .description {
+  color: var(--text-dim);
+  font-size: 0.85rem;
+  margin: 0.3rem 0 0;
+}
+
+.panel-item .requirement-note {
+  color: var(--warn);
+  font-size: 0.8rem;
+  margin-top: 0.4rem;
+}
+
+.panel-item .requirement-note a {
+  color: var(--warn);
+  text-decoration: underline;
+}
+
+.status-line {
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  margin-top: 0.5rem;
+}
+
+.status-line.status-error {
+  color: var(--alert);
+}
+
+.credential-form {
+  margin-top: 0.7rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.credential-form .field label {
+  margin: 0 0 0.25rem;
+}
+
+.credential-form .actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.credential-form .actions button {
+  flex: 0 0 auto;
+}

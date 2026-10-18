@@ -28,6 +28,7 @@ class IntegrationScheduler:
         integration_registry: IntegrationRegistry,
         load_credentials: Callable[[str], dict],
         open_db: Callable[[], Any],
+        on_sync_result: Callable[[str, bool, str | None], None] | None = None,
     ):
         """
         load_credentials(integration_id) -> dict, {} if none saved.
@@ -35,10 +36,16 @@ class IntegrationScheduler:
         worker thread pool, and sqlite3 connections must not be shared
         across threads, so a fresh connection is opened and closed on
         every tick (mirrors how /sync-now does it in main.py).
+        on_sync_result(integration_id, success, error_message), if given,
+        is called after every tick that actually ran sync() (ticks
+        skipped for lack of credentials do not call it) — lets the
+        caller persist 'last synced at' / 'last error' for the admin
+        panel's status line.
         """
         self._integration_registry = integration_registry
         self._load_credentials = load_credentials
         self._open_db = open_db
+        self._on_sync_result = on_sync_result
         self._scheduler = BackgroundScheduler()
 
     def start(self) -> None:
@@ -70,9 +77,19 @@ class IntegrationScheduler:
             logger.warning("Scheduled sync for %r: failed to open db (%s)", integration_id, exc)
             return
         try:
-            self._integration_registry.sync(integration_id, credentials=credentials, db=db)
+            success, error_message = self._integration_registry.sync(
+                integration_id, credentials=credentials, db=db
+            )
         finally:
             db.close()
+
+        if self._on_sync_result is not None:
+            try:
+                self._on_sync_result(integration_id, success, error_message)
+            except Exception as exc:  # noqa: BLE001 — a status-recording bug must not kill the job
+                logger.warning(
+                    "Scheduled sync for %r: on_sync_result callback raised (%s)", integration_id, exc
+                )
 
     def schedule(self, integration_id: str, sync_interval_seconds: int) -> None:
         """(Re)schedules an integration's sync() on its own interval.

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>LifeBoard — Integrations</title>
+  <link rel="stylesheet" href="/src/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand"><span class="dot"></span>LifeBoard</div>
+    <nav>
+      <a href="/">Dashboard</a>
+      <button id="logout-btn" type="button">Log out</button>
+    </nav>
+  </header>
+
+  <main>
+    <h2>Integrations</h2>
+    <p style="color:var(--text-dim);font-size:0.85rem;">
+      Each integration syncs its own data into LifeBoard's database on a
+      schedule. Enter credentials and click "Test &amp; Save"; "Sync now"
+      triggers an immediate sync outside the schedule.
+    </p>
+    <div class="panel-list" id="integrations-list"></div>
+  </main>
+
+  <script src="/src/api.js"></script>
+  <script src="/src/admin/integrations.js"></script>
+</body>
+</html>

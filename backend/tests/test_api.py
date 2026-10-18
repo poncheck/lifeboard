@@ -263,3 +263,56 @@ def test_delete_credentials_then_module_data_shows_no_data(app_client):
     # delete endpoint itself works and doesn't 404/500.
     sync_response = app_client.post("/api/integrations/echo/sync-now")
     assert sync_response.status_code == 200
+
+
+def test_list_integrations_reports_configured_and_sync_status(app_client):
+    app_client.post(
+        "/api/setup",
+        json={
+            "full_name": "Marcin Petkowicz",
+            "date_of_birth": "1986-03-26",
+            "email": "marcin@example.com",
+            "password": "correct-horse-battery-staple",
+        },
+    )
+    app_client.post(
+        "/api/login",
+        json={"email": "marcin@example.com", "password": "correct-horse-battery-staple"},
+    )
+
+    before = app_client.get("/api/integrations").json()["echo"]
+    assert before["configured"] is False
+    assert before["last_synced_at"] is None
+    assert before["last_error"] is None
+
+    app_client.post("/api/integrations/echo/credentials", json={"value": "hello-world"})
+    app_client.post("/api/integrations/echo/sync-now")
+
+    after = app_client.get("/api/integrations").json()["echo"]
+    assert after["configured"] is True
+    assert after["last_synced_at"] is not None
+    assert after["last_error"] is None
+
+
+def test_list_modules_reports_requirement_satisfied(app_client):
+    app_client.post(
+        "/api/setup",
+        json={
+            "full_name": "Marcin Petkowicz",
+            "date_of_birth": "1986-03-26",
+            "email": "marcin@example.com",
+            "password": "correct-horse-battery-staple",
+        },
+    )
+    app_client.post(
+        "/api/login",
+        json={"email": "marcin@example.com", "password": "correct-horse-battery-staple"},
+    )
+
+    before = app_client.get("/api/modules").json()["echo"]
+    assert before["requirement_satisfied"] is False
+
+    app_client.post("/api/integrations/echo/credentials", json={"value": "hello-world"})
+
+    after = app_client.get("/api/modules").json()["echo"]
+    assert after["requirement_satisfied"] is True

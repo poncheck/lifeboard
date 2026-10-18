@@ -83,12 +83,18 @@ class IntegrationRegistry:
             logger.warning("Integration %r raised during test_connection: %s", integration_id, exc)
             return False
 
-    def sync(self, integration_id: str, credentials: dict, db: Any) -> None:
+    def sync(self, integration_id: str, credentials: dict, db: Any) -> tuple[bool, str | None]:
+        """Runs the integration's sync(). Never raises. Returns
+        (success, error_message) so callers (main.py, the scheduler) can
+        surface 'last synced at' / 'last error' status without this
+        registry's core 'never crash' contract changing."""
         sync = self._syncs.get(integration_id)
         if sync is None:
             logger.warning("Cannot sync unknown integration %r", integration_id)
-            return
+            return False, "Unknown integration."
         try:
             sync.sync(credentials, db)
+            return True, None
         except Exception as exc:  # noqa: BLE001 — scheduler retries next tick, never crashes
             logger.warning("Integration %r raised during sync: %s", integration_id, exc)
+            return False, str(exc)
