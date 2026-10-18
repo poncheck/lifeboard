@@ -239,3 +239,51 @@ def test_list_modules_reports_requirement_satisfied(app_client):
 
     after = app_client.get("/api/modules").json()["echo"]
     assert after["requirement_satisfied"] is True
+
+
+def test_list_modules_surfaces_integration_sync_status_for_requires_integration_modules(app_client):
+    app_client.post(
+        "/api/setup",
+        json={
+            "full_name": "Marcin Petkowicz",
+            "date_of_birth": "1986-03-26",
+            "email": "marcin@example.com",
+            "password": "correct-horse-battery-staple",
+        },
+    )
+    app_client.post(
+        "/api/login",
+        json={"email": "marcin@example.com", "password": "correct-horse-battery-staple"},
+    )
+
+    before = app_client.get("/api/modules").json()["echo"]
+    assert before["integration_last_synced_at"] is None
+    assert before["integration_last_error"] is None
+
+    app_client.post("/api/integrations/echo/credentials", json={"value": "hello-world"})
+    app_client.post("/api/integrations/echo/sync-now")
+
+    after = app_client.get("/api/modules").json()["echo"]
+    assert after["integration_last_synced_at"] is not None
+    assert after["integration_last_error"] is None
+
+
+def test_list_modules_omits_integration_status_fields_when_no_integration_required(real_app_client):
+    app_client = real_app_client
+    app_client.post(
+        "/api/setup",
+        json={
+            "full_name": "Marcin Petkowicz",
+            "date_of_birth": "1986-03-26",
+            "email": "marcin@example.com",
+            "password": "correct-horse-battery-staple",
+        },
+    )
+    app_client.post(
+        "/api/login",
+        json={"email": "marcin@example.com", "password": "correct-horse-battery-staple"},
+    )
+
+    modules = app_client.get("/api/modules").json()
+    assert "integration_last_synced_at" not in modules["clock"]
+    assert "integration_last_error" not in modules["clock"]

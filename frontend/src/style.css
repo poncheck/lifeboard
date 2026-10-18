@@ -18,6 +18,25 @@
   --radius: 10px;
 }
 
+/* Per Phase 4: light theme toggle. Applied via a `data-theme="light"`
+   attribute on <html> (toggled by src/theme.js, persisted to
+   localStorage) rather than a `prefers-color-scheme` media query, so
+   the user's explicit choice always wins over the OS setting. */
+:root[data-theme="light"] {
+  --bg: #f1f5f9;
+  --bg-elevated: #ffffff;
+  --bg-card: #ffffff;
+  --border: #dbe2ea;
+  --text: #0f172a;
+  --text-dim: #5b6b80;
+  --accent: #0d9488;
+  --accent-dim: #0f766e;
+  --ok: #0d9488;
+  --warn: #b45309;
+  --alert: #dc2626;
+  --neutral: #64748b;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -277,6 +296,17 @@ main {
   color: var(--text-dim);
   margin-top: auto;
   opacity: 0.7;
+}
+
+.card .card-integration-status {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  opacity: 0.7;
+}
+
+.card .card-integration-status-error {
+  color: var(--alert);
+  opacity: 1;
 }
 
 .card[data-status="ok"] {

@@ -29,6 +29,11 @@ const GenericWidget = {
       .join("");
 
     const updatedHtml = data.updated_at ? `<div class="card-updated">updated ${relativeTime(data.updated_at)}</div>` : "";
+    // Per Phase 4: surface the underlying integration's own sync status
+    // right on the dashboard card, not just the admin panel — set by
+    // dashboard.js from GET /api/modules' integration_last_synced_at /
+    // integration_last_error fields.
+    const integrationStatusHtml = renderIntegrationStatus(data._integrationStatus);
 
     container.innerHTML = `
       <div class="card-title">${escapeHtml(data.title || "")}</div>
@@ -37,9 +42,25 @@ const GenericWidget = {
       }</div>
       ${linesHtml ? `<div class="card-lines">${linesHtml}</div>` : ""}
       ${updatedHtml}
+      ${integrationStatusHtml}
     `;
   },
 };
+
+function renderIntegrationStatus(integrationStatus) {
+  if (!integrationStatus) return "";
+  if (integrationStatus.last_error) {
+    return `<div class="card-integration-status card-integration-status-error">sync error: ${escapeHtml(
+      integrationStatus.last_error
+    )}</div>`;
+  }
+  if (integrationStatus.last_synced_at) {
+    return `<div class="card-integration-status">synced ${escapeHtml(
+      relativeTime(integrationStatus.last_synced_at)
+    )}</div>`;
+  }
+  return "";
+}
 
 function escapeHtml(value) {
   const div = document.createElement("div");

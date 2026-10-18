@@ -183,9 +183,11 @@ A module that needs something the generic card can't express (the `clock` module
 
 ## Frontend widget contract
 
-- `frontend/src/widgets/generic.js` renders the schema above — every module gets this for free.
+- `frontend/src/widgets/generic.js` renders the schema above — every module gets this for free. It also renders an integration's own "synced Xm ago" / "sync error: ..." status directly on the card (via `data._integrationStatus`, set by `dashboard.js` from `/api/modules`' `integration_last_synced_at`/`integration_last_error`), not just in the admin panel.
 - A module can ship `frontend/src/widgets/<module_id>.js` exporting a custom render function. `frontend/src/widgets/registry.js` checks for a custom renderer first, falls back to `generic.js`.
-- The dashboard polls `GET /api/modules/{id}/data` on an independent `setInterval` per widget (using `refresh_seconds` from the saved layout, falling back to the manifest default) — one slow module's poll never blocks another's.
+- The dashboard polls `GET /api/modules/{id}/data` on an independent `setInterval` per widget (using `refresh_seconds` from the saved layout, falling back to the manifest default) — one slow module's poll never blocks another's. The config panel (`frontend/src/config_panel.js`) exposes a per-module refresh override input alongside the enable/disable checkbox.
+- Dashboard cards are drag-to-reposition (`frontend/src/dashboard.js`'s `_wireDragReorder`); dropping a card persists the new `position` order to `/api/dashboard` immediately.
+- `frontend/src/theme.js` applies a `data-theme="light"` attribute on `<html>` (default is dark) and persists the choice in `localStorage`, independent of the OS's `prefers-color-scheme` — loaded in every page's `<head>` before the stylesheet to avoid a flash of the wrong theme.
 - The admin panel (`frontend/src/admin/integrations.js`) renders one card per discovered integration: a form built from `credential_fields`, "Test & Save", a sync status line, and "Sync now".
 
 ## Security model (v1)

@@ -25,6 +25,9 @@ const ConfigPanel = {
       const existing = layoutById[moduleId];
       const enabled = existing ? !!existing.enabled : false;
       const satisfied = manifest.requirement_satisfied !== false;
+      const refreshSeconds = existing && existing.refresh_seconds
+        ? existing.refresh_seconds
+        : manifest.default_refresh_seconds || 30;
 
       const item = document.createElement("div");
       item.className = `panel-item${satisfied ? "" : " disabled"}`;
@@ -44,6 +47,17 @@ const ConfigPanel = {
                 manifest.requires_integration
               )}</strong> integration configured first — see <a href="/admin/integrations.html">Integrations</a>.</p>`
         }
+        <label class="refresh-override" style="margin-top:0.4rem;display:flex;align-items:center;gap:0.4rem;font-size:0.8rem;color:var(--text-dim);">
+          Refresh every
+          <input
+            type="number"
+            min="1"
+            value="${refreshSeconds}"
+            data-refresh-module-id="${moduleId}"
+            style="width:70px;padding:0.25rem 0.4rem;"
+          >
+          seconds
+        </label>
       `;
       list.appendChild(item);
     }
@@ -51,6 +65,30 @@ const ConfigPanel = {
     list.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
       checkbox.addEventListener("change", (event) => this._onToggle(event, layout, manifests));
     });
+    list.querySelectorAll('input[data-refresh-module-id]').forEach((input) => {
+      input.addEventListener("change", (event) => this._onRefreshChange(event, layout, manifests));
+    });
+  },
+
+  async _onRefreshChange(event, layout, manifests) {
+    const moduleId = event.target.dataset.refreshModuleId;
+    const refreshSeconds = Math.max(1, parseInt(event.target.value, 10) || 30);
+
+    let entry = layout.find((item) => item.module_id === moduleId);
+    if (!entry) {
+      entry = {
+        module_id: moduleId,
+        enabled: false,
+        position: layout.length,
+        refresh_seconds: refreshSeconds,
+      };
+      layout.push(entry);
+    } else {
+      entry.refresh_seconds = refreshSeconds;
+    }
+
+    await Api.post("/api/dashboard", { modules: layout });
+    await Dashboard.render();
   },
 
   async _onToggle(event, layout, manifests) {

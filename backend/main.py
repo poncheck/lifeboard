@@ -237,7 +237,16 @@ def create_app() -> FastAPI:
         for module_id, manifest in module_registry.list_modules().items():
             requires = manifest.get("requires_integration")
             satisfied = requires is None or bool(_load_credentials(requires))
-            result[module_id] = {**manifest, "requirement_satisfied": satisfied}
+            entry = {**manifest, "requirement_satisfied": satisfied}
+            if requires is not None:
+                # Per Phase 4: surface the underlying integration's sync
+                # status directly on /api/modules so the dashboard card
+                # itself can show "last synced Xm ago" / an error,
+                # not just the admin panel.
+                sync_status = _load_sync_status(requires)
+                entry["integration_last_synced_at"] = sync_status["last_synced_at"]
+                entry["integration_last_error"] = sync_status["last_error"]
+            result[module_id] = entry
         return result
 
     @app.get("/api/modules/{module_id}/data")
