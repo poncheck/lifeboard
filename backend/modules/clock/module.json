@@ -1,0 +1,10 @@
+{
+  "id": "clock",
+  "name": "Clock",
+  "description": "Current date and time",
+  "icon": "clock",
+  "category": "system",
+  "default_refresh_seconds": 1,
+  "grid_size": "1x1",
+  "requires_integration": null
+}

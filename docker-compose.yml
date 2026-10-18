@@ -1,0 +1,11 @@
+services:
+  lifeboard:
+    build: .
+    ports:
+      - "8420:8420"
+    environment:
+      - LIFEBOARD_SECRET_KEY=${SECRET_KEY}
+    volumes:
+      - ./backend/data:/app/backend/data
+      - ./config:/app/config
+    restart: unless-stopped

@@ -1,0 +1,10 @@
+{
+  "id": "echo",
+  "name": "Echo",
+  "description": "Smoke-test module proving the full integration lifecycle (credentials -> sync -> display) works without a real third-party account.",
+  "icon": "radio",
+  "category": "system",
+  "default_refresh_seconds": 30,
+  "grid_size": "1x1",
+  "requires_integration": "echo"
+}

@@ -1,0 +1,9 @@
+{
+  "id": "echo",
+  "name": "Echo",
+  "description": "A fake 'platform' that just echoes back whatever value you type, so the full integration lifecycle can be exercised without a real third-party account.",
+  "credential_fields": [
+    {"key": "value", "label": "Value to echo", "secret": false}
+  ],
+  "sync_interval_seconds": 900
+}
